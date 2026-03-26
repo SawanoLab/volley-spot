@@ -13,7 +13,6 @@ import torch
 import torch.nn as nn
 import torchvision
 import timm
-from torch.cuda import FloatTensor as ftens
 
 
 # --- TSM ---
@@ -95,10 +94,12 @@ class _GSM(nn.Module):
         self.relu = nn.ReLU()
 
     def lshift_zeroPad(self, x):
-        return torch.cat((x[:,:,1:], ftens(x.size(0), x.size(1), 1, x.size(3), x.size(4)).fill_(0)), dim=2)
+        zero_pad = x.new_zeros(x.size(0), x.size(1), 1, x.size(3), x.size(4))
+        return torch.cat((x[:,:,1:], zero_pad), dim=2)
 
     def rshift_zeroPad(self, x):
-        return torch.cat((ftens(x.size(0), x.size(1), 1, x.size(3), x.size(4)).fill_(0), x[:,:,:-1]), dim=2)
+        zero_pad = x.new_zeros(x.size(0), x.size(1), 1, x.size(3), x.size(4))
+        return torch.cat((zero_pad, x[:,:,:-1]), dim=2)
 
     def forward(self, x):
         batchSize = x.size(0) // self.num_segments

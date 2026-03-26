@@ -1,5 +1,11 @@
 # VNL-STES: A Benchmark Dataset and Model for Spatiotemporal Event Spotting in Volleyball Analytics
 
+> **🔧 This is a modified fork for GPU portability**
+>
+> Original repository: [jhong93/spot](https://github.com/jhong93/spot)
+> 
+> **Modifications**: Added support for CUDA, MPS (Apple Metal), and CPU devices. See [Modifications](#modifications-for-gpu-portability) section below.
+
 **CVPR Workshop 2025**
 
 Hoang Quoc Nguyen, Ankhzaya Jamsrandorj, Vanyi Chao, Yin May Oo, Muhammad Amrulloh Robbani, Kyung-Ryoul Mun, Jinwook Kim
@@ -185,7 +191,45 @@ python app.py
 ├── pretrain_finetune.sh    # Two-stage pretrain+finetune script
 └── requirements.txt
 ```
+## Modifications for GPU Portability
 
+This fork adds **automatic device selection** to support CUDA, MPS (Apple Metal), and CPU without changing the main training code.
+
+### New Files
+
+- **`util/device.py`**: Device selection utilities
+  - `select_device(prefer: str)` — Auto-select best device (CUDA > MPS > CPU)
+  - `get_autocast_context(device)` — Device-aware mixed precision
+  - `get_grad_scaler(device)` — Device-aware gradient scaling
+
+### Modified Files
+
+| File | Changes |
+|------|---------|
+| `train_e2e_spatial.py` | Import device utilities; replace `torch.cuda.amp.autocast()` with `get_autocast_context()` |
+| `model/common.py` | Use `get_grad_scaler()` instead of checking `device == "cuda"` |
+| `model/shift.py` | Replace CUDA-specific `FloatTensor` with device-agnostic `x.new_zeros()` |
+| `requirements.txt` | Added `transformers>=4.30.0` (for ConvNeXt V2) |
+
+### Usage
+
+The code automatically detects and uses:
+- **NVIDIA CUDA** on GPU machines
+- **Apple Metal (MPS)** on M1/M2/M3+ Macs
+- **CPU** as fallback
+
+No code changes needed. Just run training/inference as before:
+
+```bash
+python train_e2e_spatial.py <dataset> <frame_dir> -m rny008_gsm -t gru ...
+# Automatically selects the best device
+```
+
+### Original Repository
+
+- **Source**: [jhong93/spot](https://github.com/jhong93/spot)
+- **License**: BSD 2-Clause (see [LICENSE](LICENSE))
+- **Citation**: See citation section below
 ## Citation
 
 ```bibtex

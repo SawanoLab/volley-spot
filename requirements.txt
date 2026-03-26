@@ -1,6 +1,7 @@
 torch>=1.12
 torchvision>=0.13
 timm>=0.5.4
+transformers>=4.30.0
 numpy>=1.21.4
 Pillow>=9.1.0
 opencv-python

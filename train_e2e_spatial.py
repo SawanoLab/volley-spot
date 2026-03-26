@@ -6,6 +6,7 @@ from util.score import compute_mAPs, compute_mAPs_with_locations
 from util.dataset import DATASETS, load_classes
 from util.io import load_json, store_json, store_gz_json, clear_files
 from util.eval import process_frame_predictions_with_location
+from util.device import select_device, get_autocast_context, get_grad_scaler
 from dataset.frame import ActionSpotDataset, ActionSpotVideoDataset
 from model.modules import *
 from model.shift import make_temporal_shift
@@ -530,7 +531,7 @@ class E2EModel(BaseRGBModel):
         epoch_loss_loc = 0.0
         epoch_loss_contrast = 0.0
 
-        ctx = torch.cuda.amp.autocast()
+        ctx = get_autocast_context(self.device)
 
         with torch.no_grad() if optimizer is None else nullcontext():
             pbar = tqdm(loader)
@@ -632,14 +633,14 @@ class E2EModel(BaseRGBModel):
         if seq.device != self.device:
             seq = seq.to(self.device)
 
-        ctx = torch.cuda.amp.autocast()
+        ctx = get_autocast_context(self.device)
 
         self._model.eval()
         with torch.no_grad():
             with ctx if use_amp else nullcontext():
                 pred_dict = self._model(seq)
-            pred_cls_score = torch.softmax(pred_dict["im_feat"], axis=2).cpu().numpy()
-            pred_cls = torch.argmax(pred_dict["im_feat"], axis=2).cpu().numpy()
+            pred_cls_score = torch.softmax(pred_dict["im_feat"], dim=2).cpu().numpy()
+            pred_cls = torch.argmax(pred_dict["im_feat"], dim=2).cpu().numpy()
             if self._model._predict_location:
                 pred_loc = (
                     pred_dict["loc_feat"]

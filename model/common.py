@@ -2,6 +2,7 @@ import abc
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from util.device import get_grad_scaler
 
 
 class ABCModel:
@@ -37,9 +38,7 @@ class BaseRGBModel(ABCModel):
             {"params": param, "lr": pred_loc_lr if "_pred_loc" in name else base_lr}
             for name, param in self._model.named_parameters()
         ]
-        return torch.optim.AdamW(param_groups), (
-            torch.cuda.amp.GradScaler() if self.device == "cuda" else None
-        )
+        return torch.optim.AdamW(param_groups), get_grad_scaler(self.device)
 
     """ Assume there is a self._model """
 
